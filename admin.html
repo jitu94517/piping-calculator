@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Admin Panel – ASME Material Database</title>
+<title>Admin Panel – Piping Engineering Database</title>
 
 <style>
 body { font-family: Arial; background:#f2f4f7; }
@@ -12,7 +12,7 @@ body { font-family: Arial; background:#f2f4f7; }
 }
 h2 { color:#1f4e79; text-align:center; }
 label { font-weight:bold; }
-input, select, textarea {
+input, textarea {
     width:100%; padding:6px; margin:5px 0 10px;
 }
 button {
@@ -20,7 +20,6 @@ button {
     background:#1f4e79; color:white; border:none; cursor:pointer;
 }
 button.danger { background:red; }
-button.secondary { background:#777; }
 table {
     width:100%; border-collapse:collapse; margin-top:15px;
 }
@@ -30,14 +29,14 @@ th, td {
 th { background:#eef4fb; cursor:pointer; }
 .hidden { display:none; }
 small { color:#666; }
+hr { margin:20px 0; }
 </style>
 </head>
 
 <body>
 
 <div class="container">
-
-<h2>Admin Panel – Material Stress Database</h2>
+<h2>Admin Panel – Piping Engineering Database</h2>
 
 <!-- 🔐 LOGIN -->
 <div id="loginBox">
@@ -46,38 +45,26 @@ small { color:#666; }
     <button onclick="login()">Login</button>
 </div>
 
-<!-- ================= ADMIN PANEL ================= -->
 <div id="adminPanel" class="hidden">
 
-<h3>Add / Edit Entry</h3>
+<!-- ================= MATERIAL STRESS DATABASE ================= -->
+<h3>Material Stress Database (ASME / ISO)</h3>
 
 <label>Code / Standard</label>
-<select id="code">
-<option>B31.3</option>
-<option>B31.8</option>
-<option>B31.1</option>
-</select>
+<input id="code" placeholder="ASME B31.3">
 
 <label>Material Family</label>
-<select id="family">
-<option>Carbon Steel</option>
-<option>Stainless Steel</option>
-<option>Alloy Steel</option>
-</select>
+<input id="family" placeholder="Carbon Steel">
 
 <label>Material Type</label>
-<select id="mat">
-<option value="CS">CS</option>
-<option value="SS">SS</option>
-<option value="AS">AS</option>
-</select>
+<input id="mat" placeholder="CS">
 
 <label>Material Grade</label>
 <input id="grade" placeholder="A106 Gr.B">
 
 <label>Design Temperatures (°C)</label>
 <textarea id="temps" placeholder="50, 100, 150"></textarea>
-<small>Comma separated – bulk entry supported</small>
+<small>Comma separated (bulk entry)</small>
 
 <label>Allowable Stress (MPa)</label>
 <input id="stress">
@@ -85,30 +72,59 @@ small { color:#666; }
 <label>Y Factor</label>
 <input id="y" value="0.4">
 
-<button onclick="addOrUpdate()">Save Entry</button>
+<button onclick="addMaterial()">Save Material Entry</button>
 
 <hr>
 
-<input placeholder="Search (material / grade / temp)" onkeyup="search(this.value)">
+<!-- ================= PIPE DIMENSION DATABASE ================= -->
+<h3>Pipe Dimension Database (ASME B36.xx)</h3>
 
-<button onclick="exportCSV()">Export CSV</button>
+<label>NPS</label>
+<input id="nps" placeholder='4" or DN100'>
+
+<label>Outside Diameter – OD (mm)</label>
+<input id="od" placeholder="114.3">
+
+<button onclick="addPipe()">Save Pipe Dimension</button>
+
+<hr>
+
+<!-- ================= ACTIONS ================= -->
+<input placeholder="Search material / grade" onkeyup="search(this.value)">
+
+<button onclick="exportCSV()">Export Material CSV</button>
 <input type="file" onchange="importCSV(event)">
-<button class="danger" onclick="resetDB()">Reset DB</button>
+<button class="danger" onclick="resetDB()">Reset ALL DB</button>
 
+<!-- ================= MATERIAL TABLE ================= -->
+<h3>Material Stress Table</h3>
 <table>
 <thead>
 <tr>
-<th onclick="sortBy('code')">Code</th>
-<th onclick="sortBy('family')">Family</th>
-<th onclick="sortBy('mat')">Mat</th>
-<th onclick="sortBy('grade')">Grade</th>
-<th onclick="sortBy('temp')">Temp</th>
-<th onclick="sortBy('stress')">Stress</th>
+<th>Code</th>
+<th>Family</th>
+<th>Type</th>
+<th>Grade</th>
+<th>Temp</th>
+<th>Stress</th>
 <th>Y</th>
 <th>Action</th>
 </tr>
 </thead>
-<tbody id="dbTable"></tbody>
+<tbody id="materialTable"></tbody>
+</table>
+
+<!-- ================= PIPE TABLE ================= -->
+<h3>Pipe Dimension Table</h3>
+<table>
+<thead>
+<tr>
+<th>NPS</th>
+<th>OD (mm)</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="pipeTable"></tbody>
 </table>
 
 </div>
@@ -119,62 +135,76 @@ small { color:#666; }
 const PASSWORD = "admin123";
 
 function login(){
-    const pass = document.getElementById("adminPass").value;
-    const loginBox = document.getElementById("loginBox");
-    const adminPanel = document.getElementById("adminPanel");
-
-    if(pass === PASSWORD){
-        loginBox.style.display = "none";
+    if(document.getElementById("adminPass").value === PASSWORD){
+        loginBox.style.display="none";
         adminPanel.classList.remove("hidden");
-        loadTable();
-    } else {
-        alert("❌ Wrong password");
-    }
+        loadAll();
+    } else alert("Wrong password");
 }
 
 // ================= DATABASE =================
-let db = JSON.parse(localStorage.getItem("stressDB")) || [];
+let materialDB = JSON.parse(localStorage.getItem("materialDB")) || [];
+let pipeDB = JSON.parse(localStorage.getItem("pipeDB")) || [];
 
-// ================= ADD / UPDATE =================
-function addOrUpdate(){
+// ================= MATERIAL =================
+function addMaterial(){
     const tempsArr = temps.value.split(",").map(t=>Number(t.trim())).filter(Boolean);
 
     tempsArr.forEach(t=>{
-        if(db.some(r =>
+        if(materialDB.some(r =>
             r.code===code.value &&
             r.mat===mat.value &&
             r.grade===grade.value &&
             r.temp===t
         )){
-            alert("⚠ Duplicate entry blocked");
+            alert("Duplicate material entry blocked");
             return;
         }
 
-        db.push({
+        materialDB.push({
             code:code.value,
             family:family.value,
             mat:mat.value,
             grade:grade.value,
             temp:t,
             stress:Number(stress.value),
-            y:Number(y.value),
-            updated:new Date().toISOString()
+            y:Number(y.value)
         });
     });
 
-    save();
+    saveAll();
 }
 
-// ================= SAVE & LOAD =================
-function save(){
-    localStorage.setItem("stressDB",JSON.stringify(db));
-    loadTable();
+// ================= PIPE =================
+function addPipe(){
+    if(pipeDB.some(p=>p.nps===nps.value)){
+        alert("NPS already exists");
+        return;
+    }
+
+    pipeDB.push({
+        nps:nps.value,
+        od:Number(od.value)
+    });
+    saveAll();
 }
 
-function loadTable(data=db){
-    dbTable.innerHTML="";
-    data.forEach((r,i)=>{
-        dbTable.innerHTML+=`
+// ================= SAVE / LOAD =================
+function saveAll(){
+    localStorage.setItem("materialDB",JSON.stringify(materialDB));
+    localStorage.setItem("pipeDB",JSON.stringify(pipeDB));
+    loadAll();
+}
+
+function loadAll(){
+    loadMaterialTable();
+    loadPipeTable();
+}
+
+function loadMaterialTable(){
+    materialTable.innerHTML="";
+    materialDB.forEach((r,i)=>{
+        materialTable.innerHTML+=`
         <tr>
         <td>${r.code}</td>
         <td>${r.family}</td>
@@ -183,52 +213,48 @@ function loadTable(data=db){
         <td>${r.temp}</td>
         <td>${r.stress}</td>
         <td>${r.y}</td>
-        <td>
-            <button onclick="edit(${i})">Edit</button>
-            <button class="danger" onclick="del(${i})">Del</button>
-        </td>
+        <td><button class="danger" onclick="delMaterial(${i})">Del</button></td>
         </tr>`;
     });
 }
 
-// ================= EDIT / DELETE =================
-function edit(i){
-    const r=db[i];
-    code.value=r.code;
-    family.value=r.family;
-    mat.value=r.mat;
-    grade.value=r.grade;
-    temps.value=r.temp;
-    stress.value=r.stress;
-    y.value=r.y;
-    del(i,false);
+function loadPipeTable(){
+    pipeTable.innerHTML="";
+    pipeDB.forEach((p,i)=>{
+        pipeTable.innerHTML+=`
+        <tr>
+        <td>${p.nps}</td>
+        <td>${p.od}</td>
+        <td><button class="danger" onclick="delPipe(${i})">Del</button></td>
+        </tr>`;
+    });
 }
 
-function del(i,ask=true){
-    if(ask && !confirm("Delete this entry?")) return;
-    db.splice(i,1);
-    save();
+// ================= DELETE =================
+function delMaterial(i){
+    if(confirm("Delete material entry?")){
+        materialDB.splice(i,1); saveAll();
+    }
+}
+function delPipe(i){
+    if(confirm("Delete pipe dimension?")){
+        pipeDB.splice(i,1); saveAll();
+    }
 }
 
 // ================= SEARCH =================
 function search(q){
     q=q.toLowerCase();
-    loadTable(db.filter(r=>JSON.stringify(r).toLowerCase().includes(q)));
+    loadMaterialTable(materialDB.filter(r=>JSON.stringify(r).toLowerCase().includes(q)));
 }
 
-// ================= SORT =================
-function sortBy(k){
-    db.sort((a,b)=>a[k]>b[k]?1:-1);
-    save();
-}
-
-// ================= CSV =================
+// ================= CSV EXPORT =================
 function exportCSV(){
-    let csv="Code,Family,Mat,Grade,Temp,Stress,Y\n";
-    db.forEach(r=>{
+    let csv="Code,Family,Type,Grade,Temp,Stress,Y\n";
+    materialDB.forEach(r=>{
         csv+=`${r.code},${r.family},${r.mat},${r.grade},${r.temp},${r.stress},${r.y}\n`;
     });
-    download(csv,"stressDB.csv");
+    download(csv,"materialDB.csv");
 }
 
 function importCSV(e){
@@ -236,24 +262,25 @@ function importCSV(e){
     const r=new FileReader();
     r.onload=()=>r.result.split("\n").slice(1).forEach(l=>{
         const [c,fm,m,g,t,s,y]=l.split(",");
-        if(g) db.push({code:c,family:fm,mat:m,grade:g,temp:Number(t),stress:Number(s),y:Number(y)});
+        if(g) materialDB.push({
+            code:c,family:fm,mat:m,grade:g,
+            temp:Number(t),stress:Number(s),y:Number(y)
+        });
     });
     r.readAsText(f);
-    setTimeout(save,500);
+    setTimeout(saveAll,500);
 }
 
 function download(data,name){
     const a=document.createElement("a");
     a.href=URL.createObjectURL(new Blob([data]));
-    a.download=name;
-    a.click();
+    a.download=name; a.click();
 }
 
 // ================= RESET =================
 function resetDB(){
-    if(confirm("Clear complete database?")){
-        db=[];
-        save();
+    if(confirm("Clear ALL databases?")){
+        materialDB=[]; pipeDB=[]; saveAll();
     }
 }
 </script>
