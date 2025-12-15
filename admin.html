@@ -3,28 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <title>Admin Panel – ASME B31.3</title>
+
 <style>
 body{font-family:Arial;background:#f2f4f7}
-.container{max-width:1200px;margin:20px auto;background:#fff;padding:20px;border-radius:8px}
-label{font-weight:bold}
+.container{max-width:1400px;margin:20px auto;background:#fff;padding:20px;border-radius:8px}
+h2{text-align:center;color:#1f4e79}
+
+.hint{
+  font-size:12px;
+  color:#777;
+  margin-bottom:2px;
+}
+
 input,select,textarea{width:100%;padding:6px;margin:5px 0 10px}
-button{padding:6px 12px;background:#1f4e79;color:#fff;border:none;cursor:pointer}
+button{padding:6px 14px;background:#1f4e79;color:#fff;border:none;cursor:pointer;margin-right:5px}
 button.danger{background:red}
 table{width:100%;border-collapse:collapse;margin-top:10px}
 th,td{border:1px solid #ccc;padding:6px;text-align:center}
 th{background:#eef4fb}
 .hidden{display:none}
+hr{margin:25px 0}
 </style>
 </head>
 
 <body>
 <div class="container">
+
 <h2>Admin Panel – ASME B31.3 (Process Piping)</h2>
 
 <!-- LOGIN -->
 <div id="loginBox">
-<label>Password</label>
-<input type="password" id="adminPass">
+<div class="hint">Admin Password</div>
+<input type="password" id="adminPass" placeholder="Enter password">
 <button onclick="login()">Login</button>
 </div>
 
@@ -33,74 +43,129 @@ th{background:#eef4fb}
 <!-- ================= MATERIAL MASTER ================= -->
 <h3>Material Master</h3>
 
+<div class="hint">Material Family</div>
 <input id="mFamily" placeholder="Material Family">
-<input id="mType" placeholder="Material">
-<input id="mGrade" placeholder="Grade">
-<button onclick="addMaterialMaster()">Add Material</button>
+
+<div class="hint">Material Type</div>
+<input id="mType" placeholder="Material (CS / SS)">
+
+<div class="hint">Material Grades (comma separated)</div>
+<input id="mGrades" placeholder="Grades (A106 Gr.B, A106 Gr.C)">
+
+<button onclick="saveMaterialMaster()">Save Material</button>
 
 <table>
 <thead>
-<tr>
-<th>Family</th><th>Material</th><th>Grade</th><th>Action</th>
-</tr>
+<tr><th>Family</th><th>Material</th><th>Grade</th><th>Action</th></tr>
 </thead>
 <tbody id="materialMasterTable"></tbody>
 </table>
 
 <hr>
 
-<!-- ================= PIPE TYPE MASTER ================= -->
+<!-- ================= PIPE TYPE ================= -->
 <h3>Pipe Type Master (E Factor)</h3>
 
-<input id="ptype" placeholder="Pipe Type">
-<input id="ptypeE" placeholder="E Factor">
-<input id="ptypeDesc" placeholder="Description">
-<button onclick="savePipeType()">Save Pipe Type</button>
+<div class="hint">Pipe Types (comma separated)</div>
+<input id="ptypeNames" placeholder="Pipe Types (Seamless, ERW)">
+
+<div class="hint">E Factors (comma separated)</div>
+<input id="ptypeEs" placeholder="E Factors (1.0, 0.85)">
+
+<button onclick="savePipeTypes()">Save Pipe Types</button>
 
 <table>
 <thead>
-<tr>
-<th>Pipe Type</th><th>E</th><th>Description</th><th>Action</th>
-</tr>
+<tr><th>Pipe Type</th><th>E</th><th>Action</th></tr>
 </thead>
 <tbody id="pipeTypeTable"></tbody>
 </table>
 
 <hr>
 
-<!-- ================= Y & W MASTER ================= -->
-<h3>Y & W Factor Master (Temp Wise)</h3>
+<!-- ================= PIPE DIMENSION ================= -->
+<h3>Pipe Dimension Database (NPS → OD)</h3>
 
-<select id="ywMaterial"></select>
-<input id="ywTemp" placeholder="Temperature (°C)">
-<input id="ywY" placeholder="Y Factor">
-<input id="ywW" placeholder="W Factor">
-<button onclick="addYW()">Add Y/W</button>
+<div class="hint">NPS values (comma separated)</div>
+<input id="npsList" placeholder="NPS (4,6,8)">
+
+<div class="hint">OD values in mm (comma separated)</div>
+<input id="odList" placeholder="OD mm (114.3,168.3,219.1)">
+
+<button onclick="savePipeDims()">Save Pipe Dimensions</button>
 
 <table>
 <thead>
-<tr>
-<th>Material</th><th>Temp</th><th>Y</th><th>W</th><th>Action</th>
-</tr>
+<tr><th>NPS</th><th>OD</th><th>Action</th></tr>
 </thead>
-<tbody id="ywTable"></tbody>
+<tbody id="pipeDimTable"></tbody>
 </table>
 
 <hr>
 
-<!-- ================= MATERIAL STRESS DB ================= -->
-<h3>Material Stress Database</h3>
+<!-- ================= Y FACTOR ================= -->
+<h3>Y Factor Master – ASME B31.3</h3>
 
-<select id="sMaterial"></select>
-<input id="sTemp" placeholder="Temperature (°C)">
-<input id="sStress" placeholder="Allowable Stress S (MPa)">
-<button onclick="addStress()">Save Stress</button>
+<div class="hint">Material Selection</div>
+<select id="yMaterial"></select>
+
+<div class="hint">Temperature °C (comma separated)</div>
+<input id="yTemps" placeholder="Temps (100,200,300)">
+
+<div class="hint">Y Values (comma separated)</div>
+<input id="yValues" placeholder="Y values (0.4,0.45,0.5)">
+
+<button onclick="saveY()">Save Y</button>
 
 <table>
 <thead>
-<tr>
-<th>Material</th><th>Temp</th><th>S</th><th>Action</th>
-</tr>
+<tr><th>Material</th><th>Temp</th><th>Y</th><th>Action</th></tr>
+</thead>
+<tbody id="yTable"></tbody>
+</table>
+
+<hr>
+
+<!-- ================= W FACTOR ================= -->
+<h3>W Factor Master – ASME B31.3</h3>
+
+<div class="hint">Material Selection</div>
+<select id="wMaterial"></select>
+
+<div class="hint">Temperature °C (comma separated)</div>
+<input id="wTemps" placeholder="Temps (100,200,300)">
+
+<div class="hint">W Values (comma separated)</div>
+<input id="wValues" placeholder="W values (1.0,0.95,0.9)">
+
+<button onclick="saveW()">Save W</button>
+
+<table>
+<thead>
+<tr><th>Material</th><th>Temp</th><th>W</th><th>Action</th></tr>
+</thead>
+<tbody id="wTable"></tbody>
+</table>
+
+<hr>
+
+<!-- ================= STRESS ================= -->
+<h3>Material Basic Allowable Stress Value</h3>
+
+<div class="hint">Material Selection</div>
+<select id="sMaterial"></select>
+
+<div class="hint">Temperature °C (comma separated)</div>
+<input id="sTemps" placeholder="Temps (50,100,200)">
+
+<div class="hint">Allowable Stress MPa (comma separated)</div>
+<input id="sValues" placeholder="Stress MPa (138,130,120)">
+
+<button onclick="saveStress()">Save Stress</button>
+
+<table>
+<thead>
+<tr><th>Material</th><th>Temp</th><th>Stress</th><th>Action</th></tr>
 </thead>
 <tbody id="stressTable"></tbody>
 </table>
@@ -109,16 +174,30 @@ th{background:#eef4fb}
 </div>
 
 <script>
+/* ================= AUTH ================= */
 const PASSWORD="admin123";
 
-let materialMasterDB = JSON.parse(localStorage.getItem("materialMasterDB")) || [];
-let pipeTypeDB = JSON.parse(localStorage.getItem("pipeTypeDB")) || [];
-let ywDB = JSON.parse(localStorage.getItem("ywDB")) || [];
-let stressDB = JSON.parse(localStorage.getItem("stressDB")) || [];
+/* ================= DB ================= */
+let materialMasterDB=[], pipeTypeDB=[], pipeDimDB=[], yDB=[], wDB=[], stressDB=[];
 
-let editStressIndex=null;
+/* ================= STATE ================= */
+let editState={type:null,index:null};
 
-/* LOGIN */
+/* ================= UTIL ================= */
+const splitArr = v => v.split(",").map(x=>x.trim()).filter(x=>x!=="");
+const clearFields = ids => ids.forEach(id=>document.getElementById(id).value="");
+
+const saveAll = () => {
+ localStorage.setItem("materialMasterDB",JSON.stringify(materialMasterDB));
+ localStorage.setItem("pipeTypeDB",JSON.stringify(pipeTypeDB));
+ localStorage.setItem("pipeDimDB",JSON.stringify(pipeDimDB));
+ localStorage.setItem("yDB",JSON.stringify(yDB));
+ localStorage.setItem("wDB",JSON.stringify(wDB));
+ localStorage.setItem("stressDB",JSON.stringify(stressDB));
+ loadAll();
+};
+
+/* ================= LOGIN ================= */
 function login(){
  if(adminPass.value===PASSWORD){
   loginBox.style.display="none";
@@ -127,115 +206,169 @@ function login(){
  } else alert("Wrong password");
 }
 
-/* MATERIAL MASTER */
-function addMaterialMaster(){
- materialMasterDB.push({
-  family:mFamily.value,
-  mat:mType.value,
-  grade:mGrade.value
+/* ================= SAVE FUNCTIONS ================= */
+function saveMaterialMaster(){
+ splitArr(mGrades.value).forEach(g=>{
+  materialMasterDB.push({family:mFamily.value,mat:mType.value,grade:g});
  });
+ clearFields(["mFamily","mType","mGrades"]);
  saveAll();
 }
 
+function savePipeTypes(){
+ const p=splitArr(ptypeNames.value), e=splitArr(ptypeEs.value);
+ if(p.length!==e.length){alert("Pipe & E count mismatch");return;}
+ p.forEach((x,i)=>pipeTypeDB.push({type:x,E:+e[i]}));
+ clearFields(["ptypeNames","ptypeEs"]);
+ saveAll();
+}
+
+function savePipeDims(){
+ const n=splitArr(npsList.value), o=splitArr(odList.value);
+ if(n.length!==o.length){alert("NPS & OD count mismatch");return;}
+ n.forEach((x,i)=>pipeDimDB.push({nps:x,od:+o[i]}));
+ clearFields(["npsList","odList"]);
+ saveAll();
+}
+
+function saveY(){
+ const t=splitArr(yTemps.value), v=splitArr(yValues.value);
+ if(t.length!==v.length){alert("Temp & Y count mismatch");return;}
+ t.forEach((x,i)=>yDB.push({mat:yMaterial.value,temp:+x,Y:+v[i]}));
+ clearFields(["yTemps","yValues"]);
+ saveAll();
+}
+
+function saveW(){
+ const t=splitArr(wTemps.value), v=splitArr(wValues.value);
+ if(t.length!==v.length){alert("Temp & W count mismatch");return;}
+ t.forEach((x,i)=>wDB.push({mat:wMaterial.value,temp:+x,W:+v[i]}));
+ clearFields(["wTemps","wValues"]);
+ saveAll();
+}
+
+function saveStress(){
+ const t=splitArr(sTemps.value), v=splitArr(sValues.value);
+ if(t.length!==v.length){alert("Temp & Stress count mismatch");return;}
+ t.forEach((x,i)=>stressDB.push({mat:sMaterial.value,temp:+x,stress:+v[i]}));
+ clearFields(["sTemps","sValues"]);
+ saveAll();
+}
+
+/* ================= TABLE LOADERS ================= */
 function loadMaterialMaster(){
  materialMasterTable.innerHTML="";
  materialMasterDB.forEach((m,i)=>{
   materialMasterTable.innerHTML+=`
-  <tr>
-   <td>${m.family}</td><td>${m.mat}</td><td>${m.grade}</td>
-   <td><button class="danger" onclick="materialMasterDB.splice(${i},1);saveAll()">Del</button></td>
-  </tr>`;
+   <tr>
+    <td>${m.family}</td><td>${m.mat}</td><td>${m.grade}</td>
+    <td>
+     <button onclick="editMaterial(${i})">Edit</button>
+     <button class="danger" onclick="materialMasterDB.splice(${i},1);saveAll()">Del</button>
+    </td>
+   </tr>`;
  });
-}
-
-/* DROPDOWNS */
-function loadMaterialDropdowns(){
- ywMaterial.innerHTML="";
- sMaterial.innerHTML="";
- materialMasterDB.forEach((m,i)=>{
-  const label=`${m.family} | ${m.mat} | ${m.grade}`;
-  ywMaterial.innerHTML+=`<option value="${i}">${label}</option>`;
-  sMaterial.innerHTML+=`<option value="${i}">${label}</option>`;
- });
-}
-
-/* PIPE TYPE */
-function savePipeType(){
- pipeTypeDB.push({type:ptype.value,E:+ptypeE.value,desc:ptypeDesc.value});
- saveAll();
 }
 
 function loadPipeTypes(){
  pipeTypeTable.innerHTML="";
  pipeTypeDB.forEach((p,i)=>{
   pipeTypeTable.innerHTML+=`
-  <tr>
-   <td>${p.type}</td><td>${p.E}</td><td>${p.desc}</td>
-   <td><button class="danger" onclick="pipeTypeDB.splice(${i},1);saveAll()">Del</button></td>
-  </tr>`;
+   <tr>
+    <td>${p.type}</td><td>${p.E}</td>
+    <td>
+     <button onclick="editPipe(${i})">Edit</button>
+     <button class="danger" onclick="pipeTypeDB.splice(${i},1);saveAll()">Del</button>
+    </td>
+   </tr>`;
  });
 }
 
-/* Y & W */
-function addYW(){
- const m=materialMasterDB[ywMaterial.value];
- ywDB.push({
-  material:`${m.family}|${m.mat}|${m.grade}`,
-  temp:+ywTemp.value,
-  Y:+ywY.value,
-  W:+ywW.value
- });
- saveAll();
-}
-
-function loadYW(){
- ywTable.innerHTML="";
- ywDB.forEach((r,i)=>{
-  ywTable.innerHTML+=`
-  <tr>
-   <td>${r.material}</td><td>${r.temp}</td><td>${r.Y}</td><td>${r.W}</td>
-   <td><button class="danger" onclick="ywDB.splice(${i},1);saveAll()">Del</button></td>
-  </tr>`;
+function loadPipeDims(){
+ pipeDimTable.innerHTML="";
+ pipeDimDB.forEach((p,i)=>{
+  pipeDimTable.innerHTML+=`
+   <tr>
+    <td>${p.nps}</td><td>${p.od}</td>
+    <td>
+     <button onclick="editDim(${i})">Edit</button>
+     <button class="danger" onclick="pipeDimDB.splice(${i},1);saveAll()">Del</button>
+    </td>
+   </tr>`;
  });
 }
 
-/* STRESS DB */
-function addStress(){
- const m=materialMasterDB[sMaterial.value];
- stressDB.push({
-  material:`${m.family}|${m.mat}|${m.grade}`,
-  temp:+sTemp.value,
-  stress:+sStress.value
+function loadY(){
+ yTable.innerHTML="";
+ yDB.forEach((r,i)=>{
+  yTable.innerHTML+=`
+   <tr>
+    <td>${r.mat}</td><td>${r.temp}</td><td>${r.Y}</td>
+    <td>
+     <button onclick="editY(${i})">Edit</button>
+     <button class="danger" onclick="yDB.splice(${i},1);saveAll()">Del</button>
+    </td>
+   </tr>`;
  });
- saveAll();
+}
+
+function loadW(){
+ wTable.innerHTML="";
+ wDB.forEach((r,i)=>{
+  wTable.innerHTML+=`
+   <tr>
+    <td>${r.mat}</td><td>${r.temp}</td><td>${r.W}</td>
+    <td>
+     <button onclick="editW(${i})">Edit</button>
+     <button class="danger" onclick="wDB.splice(${i},1);saveAll()">Del</button>
+    </td>
+   </tr>`;
+ });
 }
 
 function loadStress(){
  stressTable.innerHTML="";
  stressDB.forEach((r,i)=>{
   stressTable.innerHTML+=`
-  <tr>
-   <td>${r.material}</td><td>${r.temp}</td><td>${r.stress}</td>
-   <td><button class="danger" onclick="stressDB.splice(${i},1);saveAll()">Del</button></td>
-  </tr>`;
+   <tr>
+    <td>${r.mat}</td><td>${r.temp}</td><td>${r.stress}</td>
+    <td>
+     <button onclick="editStress(${i})">Edit</button>
+     <button class="danger" onclick="stressDB.splice(${i},1);saveAll()">Del</button>
+    </td>
+   </tr>`;
  });
 }
 
-/* SAVE / LOAD */
-function saveAll(){
- localStorage.setItem("materialMasterDB",JSON.stringify(materialMasterDB));
- localStorage.setItem("pipeTypeDB",JSON.stringify(pipeTypeDB));
- localStorage.setItem("ywDB",JSON.stringify(ywDB));
- localStorage.setItem("stressDB",JSON.stringify(stressDB));
- loadAll();
+/* ================= DROPDOWNS ================= */
+function loadMatDropdowns(){
+ const opts=materialMasterDB.map(m=>`${m.family}|${m.mat}|${m.grade}`);
+ yMaterial.innerHTML=wMaterial.innerHTML=sMaterial.innerHTML="";
+ opts.forEach(o=>{
+  yMaterial.innerHTML+=`<option>${o}</option>`;
+  wMaterial.innerHTML+=`<option>${o}</option>`;
+  sMaterial.innerHTML+=`<option>${o}</option>`;
+ });
 }
+
+/* ================= FIXED LOAD ALL ================= */
 function loadAll(){
+ materialMasterDB=JSON.parse(localStorage.getItem("materialMasterDB"))||[];
+ pipeTypeDB=JSON.parse(localStorage.getItem("pipeTypeDB"))||[];
+ pipeDimDB=JSON.parse(localStorage.getItem("pipeDimDB"))||[];
+ yDB=JSON.parse(localStorage.getItem("yDB"))||[];
+ wDB=JSON.parse(localStorage.getItem("wDB"))||[];
+ stressDB=JSON.parse(localStorage.getItem("stressDB"))||[];
+
  loadMaterialMaster();
- loadMaterialDropdowns();
  loadPipeTypes();
- loadYW();
+ loadPipeDims();
+ loadY();
+ loadW();
  loadStress();
+ loadMatDropdowns();
 }
 </script>
+
 </body>
 </html>
