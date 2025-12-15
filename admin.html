@@ -2,33 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Admin Panel – ASME B31.3 Database</title>
+<title>Admin Panel – ASME B31.3 Engineering DB</title>
 
 <style>
 body { font-family: Arial; background:#f2f4f7; }
-.container {
-    max-width:1200px; margin:30px auto;
-    background:#fff; padding:20px; border-radius:8px;
-}
+.container { max-width:1300px; margin:30px auto; background:#fff; padding:20px; border-radius:8px; }
 h2 { color:#1f4e79; text-align:center; }
 label { font-weight:bold; }
-input, textarea {
-    width:100%; padding:6px; margin:5px 0 10px;
-}
-button {
-    padding:8px 15px; margin:5px;
-    background:#1f4e79; color:white; border:none; cursor:pointer;
-}
+input, textarea, select { width:100%; padding:6px; margin:5px 0 10px; }
+button { padding:8px 15px; background:#1f4e79; color:#fff; border:none; cursor:pointer; margin:5px; }
 button.danger { background:red; }
-table {
-    width:100%; border-collapse:collapse; margin-top:15px;
-}
-th, td {
-    border:1px solid #ccc; padding:6px; text-align:center;
-}
+table { width:100%; border-collapse:collapse; margin-top:15px; }
+th, td { border:1px solid #ccc; padding:6px; text-align:center; }
 th { background:#eef4fb; }
 .hidden { display:none; }
-small { color:#666; }
+small { color:#555; }
 hr { margin:20px 0; }
 </style>
 </head>
@@ -38,249 +26,193 @@ hr { margin:20px 0; }
 <div class="container">
 <h2>Admin Panel – ASME B31.3 (Process Piping)</h2>
 
-<!-- 🔐 LOGIN -->
+<!-- LOGIN -->
 <div id="loginBox">
-    <label>Admin Password</label>
-    <input type="password" id="adminPass">
-    <button onclick="login()">Login</button>
+  <label>Admin Password</label>
+  <input type="password" id="adminPass">
+  <button onclick="login()">Login</button>
 </div>
 
 <div id="adminPanel" class="hidden">
 
-<!-- ================= MATERIAL STRESS DATABASE ================= -->
-<h3>Material Stress Database – ASME B31.3</h3>
+<!-- ================= PIPE TYPE MASTER ================= -->
+<h3>Pipe Type Master</h3>
 
-<label>Code / Standard</label>
-<input id="code" value="ASME B31.3" readonly>
+<label>Pipe Type</label>
+<input id="ptype" placeholder="Seamless / ERW / LSAW">
 
-<label>Material Family</label>
-<input id="family" placeholder="Carbon Steel">
+<label>E Factor</label>
+<input id="ptypeE" value="1.0">
 
-<label>Material Type</label>
-<input id="mat" placeholder="CS">
+<label>W Factor</label>
+<input id="ptypeW" value="1.0">
 
-<label>Material Grade</label>
-<input id="grade" placeholder="A106 Gr.B">
+<label>Description</label>
+<input id="ptypeDesc">
 
-<label>Design Temperatures (°C)</label>
-<textarea id="temps" placeholder="50, 100, 150"></textarea>
-<small>Comma separated – bulk entry allowed</small>
+<button onclick="addPipeType()">Add Pipe Type</button>
 
-<label>Allowable Stress S (MPa) – Table A-1</label>
-<input id="stress">
-
-<label>Y Factor – Table 304.1.1</label>
-<input id="y" value="0.4">
-
-<label>W Factor – Table 302.3.5</label>
-<input id="w" value="1.0">
-
-<button onclick="addMaterial()">Save Material Entry</button>
-
-<hr>
-
-<!-- ================= PIPE DIMENSION DATABASE ================= -->
-<h3>Pipe Dimension Database</h3>
-
-<label>NPS</label>
-<input id="nps" placeholder='4" or DN100'>
-
-<label>Outside Diameter – OD (mm)</label>
-<input id="od" placeholder="114.3">
-
-<button onclick="addPipe()">Save Pipe Dimension</button>
-
-<hr>
-
-<button onclick="exportCSV()">Export Material CSV</button>
-<input type="file" onchange="importCSV(event)">
-<button class="danger" onclick="resetDB()">Reset ALL DB</button>
-
-<!-- ================= MATERIAL TABLE ================= -->
-<h3>Material Stress Table (B31.3)</h3>
 <table>
 <thead>
 <tr>
-<th>Family</th>
-<th>Type</th>
-<th>Grade</th>
-<th>Temp</th>
-<th>S</th>
-<th>Y</th>
+<th>Pipe Type</th>
+<th>E</th>
 <th>W</th>
+<th>Description</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="pipeTypeTable"></tbody>
+</table>
+
+<hr>
+
+<!-- ================= MATERIAL STRESS DATABASE ================= -->
+<h3>Material Stress Database – ASME B31.3</h3>
+
+<label>Material Family</label>
+<input id="family">
+
+<label>Material Type</label>
+<input id="mat">
+
+<label>Material Grade</label>
+<input id="grade">
+
+<label>Pipe Type</label>
+<select id="pipeType" onchange="applyPipeTypeFactors()"></select>
+
+<label>E Factor</label>
+<input id="e" readonly>
+
+<label>W Factor</label>
+<input id="w" readonly>
+
+<label>Y Factor</label>
+<input id="y" value="0.4">
+
+<label>Design Temperatures (°C)</label>
+<textarea id="temps" placeholder="50,100"></textarea>
+
+<label>Allowable Stress S (MPa)</label>
+<input id="stress">
+
+<button onclick="addMaterial()">Save Material Entry</button>
+
+<table>
+<thead>
+<tr>
+<th>Family</th><th>Type</th><th>Grade</th>
+<th>Pipe Type</th><th>T</th>
+<th>S</th><th>E</th><th>W</th><th>Y</th>
 <th>Action</th>
 </tr>
 </thead>
 <tbody id="materialTable"></tbody>
 </table>
 
-<!-- ================= PIPE TABLE ================= -->
-<h3>Pipe Dimension Table</h3>
-<table>
-<thead>
-<tr>
-<th>NPS</th>
-<th>OD (mm)</th>
-<th>Action</th>
-</tr>
-</thead>
-<tbody id="pipeTable"></tbody>
-</table>
-
 </div>
 </div>
 
 <script>
-// ================= AUTH =================
-const PASSWORD = "admin123";
+const PASSWORD="admin123";
+let materialDB = JSON.parse(localStorage.getItem("materialDB")) || [];
+let pipeTypeDB = JSON.parse(localStorage.getItem("pipeTypeDB")) || [];
 
 function login(){
-    if(document.getElementById("adminPass").value === PASSWORD){
-        document.getElementById("loginBox").style.display="none";
-        document.getElementById("adminPanel").classList.remove("hidden");
-        loadAll();
-    } else {
-        alert("Wrong password");
-    }
-}
-
-// ================= DATABASE =================
-let materialDB = JSON.parse(localStorage.getItem("materialDB")) || [];
-let pipeDB = JSON.parse(localStorage.getItem("pipeDB")) || [];
-
-// ================= MATERIAL =================
-function addMaterial(){
-    const tempsArr = temps.value.split(",").map(t=>Number(t.trim())).filter(Boolean);
-
-    tempsArr.forEach(t=>{
-        if(materialDB.some(r =>
-            r.grade===grade.value &&
-            r.temp===t
-        )){
-            alert("Duplicate entry blocked");
-            return;
-        }
-
-        materialDB.push({
-            code: "ASME B31.3",
-            family: family.value,
-            mat: mat.value,
-            grade: grade.value,
-            temp: t,
-            stress: Number(stress.value),
-            y: Number(y.value),
-            w: Number(w.value)
-        });
-    });
-
-    saveAll();
-}
-
-// ================= PIPE =================
-function addPipe(){
-    if(pipeDB.some(p=>p.nps===nps.value)){
-        alert("NPS already exists");
-        return;
-    }
-
-    pipeDB.push({
-        nps: nps.value,
-        od: Number(od.value)
-    });
-
-    saveAll();
-}
-
-// ================= SAVE / LOAD =================
-function saveAll(){
-    localStorage.setItem("materialDB",JSON.stringify(materialDB));
-    localStorage.setItem("pipeDB",JSON.stringify(pipeDB));
+  if(adminPass.value===PASSWORD){
+    loginBox.style.display="none";
+    adminPanel.classList.remove("hidden");
     loadAll();
+  } else alert("Wrong password");
+}
+
+/* ---------- PIPE TYPE MASTER ---------- */
+function addPipeType(){
+  if(pipeTypeDB.some(p=>p.type===ptype.value)){
+    alert("Pipe type already exists"); return;
+  }
+  pipeTypeDB.push({
+    type:ptype.value,
+    E:Number(ptypeE.value),
+    W:Number(ptypeW.value),
+    desc:ptypeDesc.value
+  });
+  saveAll();
+}
+
+function loadPipeTypes(){
+  pipeTypeTable.innerHTML="";
+  pipeType.innerHTML="";
+  pipeTypeDB.forEach((p,i)=>{
+    pipeType.innerHTML+=`<option value="${p.type}">${p.type}</option>`;
+    pipeTypeTable.innerHTML+=`
+    <tr>
+      <td>${p.type}</td><td>${p.E}</td><td>${p.W}</td><td>${p.desc}</td>
+      <td><button class="danger" onclick="delPipeType(${i})">Del</button></td>
+    </tr>`;
+  });
+}
+
+function applyPipeTypeFactors(){
+  const p = pipeTypeDB.find(x=>x.type===pipeType.value);
+  if(p){ e.value=p.E; w.value=p.W; }
+}
+
+function delPipeType(i){
+  if(confirm("Delete pipe type?")){
+    pipeTypeDB.splice(i,1); saveAll();
+  }
+}
+
+/* ---------- MATERIAL ---------- */
+function addMaterial(){
+  temps.value.split(",").map(t=>Number(t.trim())).forEach(T=>{
+    materialDB.push({
+      code:"ASME B31.3",
+      family:family.value,
+      mat:mat.value,
+      grade:grade.value,
+      pipeType:pipeType.value,
+      temp:T,
+      stress:Number(stress.value),
+      E:Number(e.value),
+      W:Number(w.value),
+      Y:Number(y.value)
+    });
+  });
+  saveAll();
+}
+
+function loadMaterial(){
+  materialTable.innerHTML="";
+  materialDB.forEach((r,i)=>{
+    materialTable.innerHTML+=`
+    <tr>
+      <td>${r.family}</td><td>${r.mat}</td><td>${r.grade}</td>
+      <td>${r.pipeType}</td><td>${r.temp}</td>
+      <td>${r.stress}</td><td>${r.E}</td><td>${r.W}</td><td>${r.Y}</td>
+      <td><button class="danger" onclick="delMaterial(${i})">Del</button></td>
+    </tr>`;
+  });
+}
+
+function delMaterial(i){
+  if(confirm("Delete entry?")){
+    materialDB.splice(i,1); saveAll();
+  }
+}
+
+/* ---------- SAVE / LOAD ---------- */
+function saveAll(){
+  localStorage.setItem("materialDB",JSON.stringify(materialDB));
+  localStorage.setItem("pipeTypeDB",JSON.stringify(pipeTypeDB));
+  loadAll();
 }
 
 function loadAll(){
-    loadMaterialTable();
-    loadPipeTable();
-}
-
-function loadMaterialTable(){
-    materialTable.innerHTML="";
-    materialDB.forEach((r,i)=>{
-        materialTable.innerHTML+=`
-        <tr>
-        <td>${r.family}</td>
-        <td>${r.mat}</td>
-        <td>${r.grade}</td>
-        <td>${r.temp}</td>
-        <td>${r.stress}</td>
-        <td>${r.y}</td>
-        <td>${r.w}</td>
-        <td><button class="danger" onclick="delMaterial(${i})">Del</button></td>
-        </tr>`;
-    });
-}
-
-function loadPipeTable(){
-    pipeTable.innerHTML="";
-    pipeDB.forEach((p,i)=>{
-        pipeTable.innerHTML+=`
-        <tr>
-        <td>${p.nps}</td>
-        <td>${p.od}</td>
-        <td><button class="danger" onclick="delPipe(${i})">Del</button></td>
-        </tr>`;
-    });
-}
-
-// ================= DELETE =================
-function delMaterial(i){
-    if(confirm("Delete material entry?")){
-        materialDB.splice(i,1); saveAll();
-    }
-}
-function delPipe(i){
-    if(confirm("Delete pipe dimension?")){
-        pipeDB.splice(i,1); saveAll();
-    }
-}
-
-// ================= CSV =================
-function exportCSV(){
-    let csv="Code,Family,Type,Grade,Temp,S,Y,W\n";
-    materialDB.forEach(r=>{
-        csv+=`${r.code},${r.family},${r.mat},${r.grade},${r.temp},${r.stress},${r.y},${r.w}\n`;
-    });
-    download(csv,"ASME_B31_3_MaterialDB.csv");
-}
-
-function importCSV(e){
-    const f=e.target.files[0];
-    const r=new FileReader();
-    r.onload=()=>r.result.split("\n").slice(1).forEach(l=>{
-        const [c,fm,m,g,t,s,y,w]=l.split(",");
-        if(g) materialDB.push({
-            code:c,family:fm,mat:m,grade:g,
-            temp:Number(t),stress:Number(s),y:Number(y),w:Number(w)
-        });
-    });
-    r.readAsText(f);
-    setTimeout(saveAll,500);
-}
-
-function download(data,name){
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob([data]));
-    a.download=name;
-    a.click();
-}
-
-// ================= RESET =================
-function resetDB(){
-    if(confirm("Clear ALL databases?")){
-        materialDB=[];
-        pipeDB=[];
-        saveAll();
-    }
+  loadPipeTypes();
+  loadMaterial();
 }
 </script>
 
