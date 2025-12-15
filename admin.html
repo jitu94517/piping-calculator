@@ -55,11 +55,7 @@ hr { margin:20px 0; }
 <table>
 <thead>
 <tr>
-<th>Pipe Type</th>
-<th>E</th>
-<th>W</th>
-<th>Description</th>
-<th>Action</th>
+<th>Pipe Type</th><th>E</th><th>W</th><th>Description</th><th>Action</th>
 </tr>
 </thead>
 <tbody id="pipeTypeTable"></tbody>
@@ -67,7 +63,20 @@ hr { margin:20px 0; }
 
 <hr>
 
-<!-- ================= MATERIAL STRESS DATABASE ================= -->
+<!-- ================= PIPE DIMENSION DB ================= -->
+<h3>Pipe Dimension Database</h3>
+
+<label>NPS</label>
+<input id="nps">
+
+<label>OD (mm)</label>
+<input id="od">
+
+<button onclick="addPipe()">Add Pipe</button>
+
+<hr>
+
+<!-- ================= MATERIAL DB ================= -->
 <h3>Material Stress Database – ASME B31.3</h3>
 
 <label>Material Family</label>
@@ -88,14 +97,20 @@ hr { margin:20px 0; }
 <label>W Factor</label>
 <input id="w" readonly>
 
-<label>Y Factor</label>
-<input id="y" value="0.4">
+<label>NPS (for D/t)</label>
+<select id="npsSelect" onchange="autoFillY()"></select>
+
+<label>Wall Thickness t (mm)</label>
+<input id="thk" onchange="autoFillY()">
+
+<label>Y Factor (auto-filled)</label>
+<input id="y">
 
 <label>Design Temperatures (°C)</label>
-<textarea id="temps" placeholder="50,100"></textarea>
+<textarea id="temps" placeholder="50,100,200"></textarea>
 
 <label>Allowable Stress S (MPa)</label>
-<input id="stress">
+<textarea id="stress" placeholder="100,200,300"></textarea>
 
 <button onclick="addMaterial()">Save Material Entry</button>
 
@@ -116,8 +131,10 @@ hr { margin:20px 0; }
 
 <script>
 const PASSWORD="admin123";
+
 let materialDB = JSON.parse(localStorage.getItem("materialDB")) || [];
 let pipeTypeDB = JSON.parse(localStorage.getItem("pipeTypeDB")) || [];
+let pipeDB = JSON.parse(localStorage.getItem("pipeDB")) || [];
 
 function login(){
   if(adminPass.value===PASSWORD){
@@ -127,31 +144,10 @@ function login(){
   } else alert("Wrong password");
 }
 
-/* ---------- PIPE TYPE MASTER ---------- */
+/* ---------- PIPE TYPE ---------- */
 function addPipeType(){
-  if(pipeTypeDB.some(p=>p.type===ptype.value)){
-    alert("Pipe type already exists"); return;
-  }
-  pipeTypeDB.push({
-    type:ptype.value,
-    E:Number(ptypeE.value),
-    W:Number(ptypeW.value),
-    desc:ptypeDesc.value
-  });
+  pipeTypeDB.push({ type:ptype.value, E:+ptypeE.value, W:+ptypeW.value, desc:ptypeDesc.value });
   saveAll();
-}
-
-function loadPipeTypes(){
-  pipeTypeTable.innerHTML="";
-  pipeType.innerHTML="";
-  pipeTypeDB.forEach((p,i)=>{
-    pipeType.innerHTML+=`<option value="${p.type}">${p.type}</option>`;
-    pipeTypeTable.innerHTML+=`
-    <tr>
-      <td>${p.type}</td><td>${p.E}</td><td>${p.W}</td><td>${p.desc}</td>
-      <td><button class="danger" onclick="delPipeType(${i})">Del</button></td>
-    </tr>`;
-  });
 }
 
 function applyPipeTypeFactors(){
@@ -159,15 +155,35 @@ function applyPipeTypeFactors(){
   if(p){ e.value=p.E; w.value=p.W; }
 }
 
-function delPipeType(i){
-  if(confirm("Delete pipe type?")){
-    pipeTypeDB.splice(i,1); saveAll();
-  }
+/* ---------- PIPE DIMENSION ---------- */
+function addPipe(){
+  pipeDB.push({ nps:nps.value, od:+od.value });
+  saveAll();
+}
+
+/* ---------- AUTO Y FACTOR ---------- */
+function autoFillY(){
+  const pipe = pipeDB.find(p=>p.nps===npsSelect.value);
+  if(!pipe || !thk.value) return;
+
+  const D = pipe.od;
+  const t = Number(thk.value);
+  const Dt = D/t;
+
+  y.value = (Dt <= 6) ? 0.4 : 0.4; // default, editable
 }
 
 /* ---------- MATERIAL ---------- */
 function addMaterial(){
-  temps.value.split(",").map(t=>Number(t.trim())).forEach(T=>{
+  const tempArr = temps.value.split(",").map(Number);
+  const stressArr = stress.value.split(",").map(Number);
+
+  if(tempArr.length !== stressArr.length){
+    alert("Temperature & Stress count mismatch");
+    return;
+  }
+
+  tempArr.forEach((T,i)=>{
     materialDB.push({
       code:"ASME B31.3",
       family:family.value,
@@ -175,16 +191,31 @@ function addMaterial(){
       grade:grade.value,
       pipeType:pipeType.value,
       temp:T,
-      stress:Number(stress.value),
-      E:Number(e.value),
-      W:Number(w.value),
-      Y:Number(y.value)
+      stress:stressArr[i],
+      E:+e.value,
+      W:+w.value,
+      Y:+y.value
     });
   });
+
   saveAll();
 }
 
-function loadMaterial(){
+/* ---------- LOAD / SAVE ---------- */
+function saveAll(){
+  localStorage.setItem("materialDB",JSON.stringify(materialDB));
+  localStorage.setItem("pipeTypeDB",JSON.stringify(pipeTypeDB));
+  localStorage.setItem("pipeDB",JSON.stringify(pipeDB));
+  loadAll();
+}
+
+function loadAll(){
+  pipeType.innerHTML="";
+  pipeTypeDB.forEach(p=>pipeType.innerHTML+=`<option>${p.type}</option>`);
+
+  npsSelect.innerHTML="";
+  pipeDB.forEach(p=>npsSelect.innerHTML+=`<option>${p.nps}</option>`);
+
   materialTable.innerHTML="";
   materialDB.forEach((r,i)=>{
     materialTable.innerHTML+=`
@@ -192,27 +223,9 @@ function loadMaterial(){
       <td>${r.family}</td><td>${r.mat}</td><td>${r.grade}</td>
       <td>${r.pipeType}</td><td>${r.temp}</td>
       <td>${r.stress}</td><td>${r.E}</td><td>${r.W}</td><td>${r.Y}</td>
-      <td><button class="danger" onclick="delMaterial(${i})">Del</button></td>
+      <td><button class="danger" onclick="materialDB.splice(${i},1);saveAll()">Del</button></td>
     </tr>`;
   });
-}
-
-function delMaterial(i){
-  if(confirm("Delete entry?")){
-    materialDB.splice(i,1); saveAll();
-  }
-}
-
-/* ---------- SAVE / LOAD ---------- */
-function saveAll(){
-  localStorage.setItem("materialDB",JSON.stringify(materialDB));
-  localStorage.setItem("pipeTypeDB",JSON.stringify(pipeTypeDB));
-  loadAll();
-}
-
-function loadAll(){
-  loadPipeTypes();
-  loadMaterial();
 }
 </script>
 
