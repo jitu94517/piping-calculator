@@ -1,47 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Admin Panel – ASME B31.3</title>
+<title>Admin Panel – ASME B31.3 (Process Piping)</title>
+
 <style>
-body{font-family:Arial;background:#f2f4f7}
-.container{max-width:1200px;margin:20px auto;background:#fff;padding:20px;border-radius:8px}
-label{font-weight:bold}
-input,select,textarea{width:100%;padding:6px;margin:5px 0 10px}
-button{padding:6px 12px;background:#1f4e79;color:#fff;border:none;cursor:pointer}
-button.danger{background:red}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid #ccc;padding:6px;text-align:center}
-th{background:#eef4fb}
-.hidden{display:none}
+body { font-family: Arial; background:#f2f4f7; }
+.container {
+  max-width:1300px; margin:20px auto;
+  background:#fff; padding:20px; border-radius:8px;
+}
+h2 { color:#1f4e79; text-align:center; }
+label { font-weight:bold; }
+input, select, textarea {
+  width:100%; padding:6px; margin:5px 0 10px;
+}
+button {
+  padding:6px 14px; background:#1f4e79;
+  color:#fff; border:none; cursor:pointer;
+}
+button.danger { background:red; }
+table {
+  width:100%; border-collapse:collapse; margin-top:10px;
+}
+th, td {
+  border:1px solid #ccc; padding:6px; text-align:center;
+}
+th { background:#eef4fb; }
+.hidden { display:none; }
+hr { margin:25px 0; }
+small { color:#555; }
 </style>
 </head>
 
 <body>
 <div class="container">
+
 <h2>Admin Panel – ASME B31.3 (Process Piping)</h2>
 
+<!-- LOGIN -->
 <div id="loginBox">
-<label>Password</label>
-<input type="password" id="adminPass">
-<button onclick="login()">Login</button>
+  <label>Admin Password</label>
+  <input type="password" id="adminPass">
+  <button onclick="login()">Login</button>
 </div>
 
 <div id="adminPanel" class="hidden">
 
-<!-- ================= PIPE TYPE MASTER ================= -->
-<h3>Pipe Type Master</h3>
+<!-- ===================================================== -->
+<!-- PIPE TYPE MASTER (E FACTOR) -->
+<!-- ===================================================== -->
+<h3>Pipe Type Master (E Factor)</h3>
 
 <input id="ptype" placeholder="Pipe Type (Seamless / ERW)">
 <input id="ptypeE" placeholder="E Factor">
-<input id="ptypeW" placeholder="W Factor">
 <input id="ptypeDesc" placeholder="Description">
 <button onclick="savePipeType()">Save Pipe Type</button>
 
 <table>
 <thead>
 <tr>
-<th>Pipe Type</th><th>E</th><th>W</th><th>Description</th><th>Action</th>
+<th>Pipe Type</th><th>E</th><th>Description</th><th>Action</th>
 </tr>
 </thead>
 <tbody id="pipeTypeTable"></tbody>
@@ -49,7 +68,51 @@ th{background:#eef4fb}
 
 <hr>
 
-<!-- ================= MATERIAL DATABASE ================= -->
+<!-- ===================================================== -->
+<!-- PIPE DIMENSION DATABASE -->
+<!-- ===================================================== -->
+<h3>Pipe Dimension Database</h3>
+
+<input id="nps" placeholder="NPS (4, 6, 8)">
+<input id="od" placeholder="OD (mm)">
+<button onclick="addPipe()">Add Pipe</button>
+
+<table>
+<thead>
+<tr><th>NPS</th><th>OD (mm)</th><th>Action</th></tr>
+</thead>
+<tbody id="pipeTable"></tbody>
+</table>
+
+<hr>
+
+<!-- ===================================================== -->
+<!-- Y & W FACTOR MASTER (TEMP WISE) -->
+<!-- ===================================================== -->
+<h3>Y & W Factor Master – ASME B31.3 (Temp Wise)</h3>
+
+<input id="ywMaterial" placeholder="Material (Carbon Steel)">
+<input id="ywGrade" placeholder="Grade (A106 Gr.B)">
+<input id="ywTemp" placeholder="Temperature (°C)">
+<input id="ywY" placeholder="Y Factor">
+<input id="ywW" placeholder="W Factor">
+
+<button onclick="addYW()">Add Y / W Entry</button>
+
+<table>
+<thead>
+<tr>
+<th>Material</th><th>Grade</th><th>Temp</th><th>Y</th><th>W</th><th>Action</th>
+</tr>
+</thead>
+<tbody id="ywTable"></tbody>
+</table>
+
+<hr>
+
+<!-- ===================================================== -->
+<!-- MATERIAL STRESS DATABASE -->
+<!-- ===================================================== -->
 <h3>Material Stress Database – ASME B31.3</h3>
 
 <input id="family" placeholder="Material Family">
@@ -59,20 +122,23 @@ th{background:#eef4fb}
 <label>Pipe Type</label>
 <select id="pipeTypeSelect" onchange="applyPipeType()"></select>
 
-<input id="e" placeholder="E Factor" readonly>
-<input id="w" placeholder="W Factor" readonly>
-<input id="y" placeholder="Y Factor">
+<label>E Factor</label>
+<input id="e" readonly>
 
-<textarea id="temps" placeholder="Temperatures e.g. 50,100"></textarea>
-<textarea id="stress" placeholder="Stress e.g. 100,90"></textarea>
+<label>Design Temperatures (°C)</label>
+<textarea id="temps" placeholder="50,100,200"></textarea>
 
-<button onclick="addMaterial()">Add Material</button>
+<label>Allowable Stress S (MPa)</label>
+<textarea id="stress" placeholder="138,130,120"></textarea>
+
+<button onclick="addMaterial()">Add Material Entry</button>
 
 <table>
 <thead>
 <tr>
 <th>Family</th><th>Type</th><th>Grade</th>
-<th>Pipe</th><th>T</th><th>S</th><th>E</th><th>W</th><th>Y</th><th>Action</th>
+<th>Pipe</th><th>T</th><th>S</th><th>E</th>
+<th>Action</th>
 </tr>
 </thead>
 <tbody id="materialTable"></tbody>
@@ -82,125 +148,189 @@ th{background:#eef4fb}
 </div>
 
 <script>
-const PASSWORD="admin123";
-let pipeTypeDB=JSON.parse(localStorage.getItem("pipeTypeDB"))||[];
-let materialDB=JSON.parse(localStorage.getItem("materialDB"))||[];
-let editPipeIndex=null;
+/* ================= DATABASE ================= */
+const PASSWORD = "admin123";
 
-/* LOGIN */
+let pipeTypeDB = JSON.parse(localStorage.getItem("pipeTypeDB")) || [];
+let pipeDB     = JSON.parse(localStorage.getItem("pipeDB")) || [];
+let ywDB       = JSON.parse(localStorage.getItem("ywDB")) || [];
+let materialDB = JSON.parse(localStorage.getItem("materialDB")) || [];
+
+let editPipeTypeIndex = null;
+
+/* ================= LOGIN ================= */
 function login(){
- if(adminPass.value===PASSWORD){
-  loginBox.style.display="none";
-  adminPanel.classList.remove("hidden");
-  loadAll();
- } else alert("Wrong Password");
+  if(adminPass.value === PASSWORD){
+    loginBox.style.display="none";
+    adminPanel.classList.remove("hidden");
+    loadAll();
+  } else alert("Wrong password");
 }
 
-/* PIPE TYPE MASTER */
+/* ================= PIPE TYPE ================= */
 function savePipeType(){
- if(editPipeIndex===null){
-  pipeTypeDB.push({
-   type:ptype.value,
-   E:+ptypeE.value,
-   W:+ptypeW.value,
-   desc:ptypeDesc.value
-  });
- }else{
-  pipeTypeDB[editPipeIndex]={
-   type:ptype.value,
-   E:+ptypeE.value,
-   W:+ptypeW.value,
-   desc:ptypeDesc.value
-  };
-  editPipeIndex=null;
- }
- clearPipeForm();
- saveAll();
-}
+  const obj = { type:ptype.value, E:+ptypeE.value, desc:ptypeDesc.value };
 
-function editPipeType(i){
- const p=pipeTypeDB[i];
- ptype.value=p.type;
- ptypeE.value=p.E;
- ptypeW.value=p.W;
- ptypeDesc.value=p.desc;
- editPipeIndex=i;
-}
-
-function delPipeType(i){
- if(confirm("Delete Pipe Type?")){
-  pipeTypeDB.splice(i,1);
+  if(editPipeTypeIndex === null){
+    if(pipeTypeDB.some(p=>p.type===obj.type)){
+      alert("Pipe type already exists"); return;
+    }
+    pipeTypeDB.push(obj);
+  } else {
+    pipeTypeDB[editPipeTypeIndex] = obj;
+    editPipeTypeIndex = null;
+  }
+  clearPipeTypeForm();
   saveAll();
- }
 }
 
 function loadPipeTypes(){
- pipeTypeTable.innerHTML="";
- pipeTypeSelect.innerHTML="<option value=''>Select</option>";
- pipeTypeDB.forEach((p,i)=>{
-  pipeTypeTable.innerHTML+=`
-   <tr>
-    <td>${p.type}</td><td>${p.E}</td><td>${p.W}</td><td>${p.desc}</td>
-    <td>
-     <button onclick="editPipeType(${i})">Edit</button>
-     <button class="danger" onclick="delPipeType(${i})">Del</button>
-    </td>
-   </tr>`;
-  pipeTypeSelect.innerHTML+=`<option value="${p.type}">${p.type}</option>`;
- });
+  pipeTypeTable.innerHTML="";
+  pipeTypeSelect.innerHTML="<option value=''>Select</option>";
+
+  pipeTypeDB.forEach((p,i)=>{
+    pipeTypeTable.innerHTML += `
+      <tr>
+        <td>${p.type}</td><td>${p.E}</td><td>${p.desc}</td>
+        <td>
+          <button onclick="editPipeType(${i})">Edit</button>
+          <button class="danger" onclick="delPipeType(${i})">Del</button>
+        </td>
+      </tr>`;
+    pipeTypeSelect.innerHTML += `<option value="${p.type}">${p.type}</option>`;
+  });
+}
+
+function editPipeType(i){
+  const p = pipeTypeDB[i];
+  ptype.value = p.type;
+  ptypeE.value = p.E;
+  ptypeDesc.value = p.desc;
+  editPipeTypeIndex = i;
+}
+
+function delPipeType(i){
+  if(confirm("Delete pipe type?")){
+    pipeTypeDB.splice(i,1);
+    saveAll();
+  }
 }
 
 function applyPipeType(){
- const p=pipeTypeDB.find(x=>x.type===pipeTypeSelect.value);
- if(p){ e.value=p.E; w.value=p.W; }
+  const p = pipeTypeDB.find(x=>x.type===pipeTypeSelect.value);
+  if(p) e.value = p.E;
 }
 
-function clearPipeForm(){
- ptype.value="";ptypeE.value="";ptypeW.value="";ptypeDesc.value="";
+function clearPipeTypeForm(){
+  ptype.value=""; ptypeE.value=""; ptypeDesc.value="";
 }
 
-/* MATERIAL */
-function addMaterial(){
- const tArr=temps.value.split(",").map(Number);
- const sArr=stress.value.split(",").map(Number);
- if(tArr.length!==sArr.length){alert("T & S count mismatch");return;}
- tArr.forEach((T,i)=>{
-  materialDB.push({
-   family:family.value,
-   mat:mat.value,
-   grade:grade.value,
-   pipe:pipeTypeSelect.value,
-   temp:T,
-   stress:sArr[i],
-   E:+e.value,W:+w.value,Y:+y.value
+/* ================= PIPE DIMENSION ================= */
+function addPipe(){
+  if(pipeDB.some(p=>p.nps===nps.value)){
+    alert("NPS already exists"); return;
+  }
+  pipeDB.push({ nps:nps.value, od:+od.value });
+  saveAll();
+}
+
+function loadPipes(){
+  pipeTable.innerHTML="";
+  pipeDB.forEach((p,i)=>{
+    pipeTable.innerHTML += `
+      <tr>
+        <td>${p.nps}</td><td>${p.od}</td>
+        <td><button class="danger" onclick="pipeDB.splice(${i},1);saveAll()">Del</button></td>
+      </tr>`;
   });
- });
- saveAll();
+}
+
+/* ================= Y & W MASTER ================= */
+function addYW(){
+  ywDB.push({
+    material:ywMaterial.value,
+    grade:ywGrade.value,
+    temp:+ywTemp.value,
+    Y:+ywY.value,
+    W:+ywW.value
+  });
+  saveAll();
+}
+
+function loadYW(){
+  ywTable.innerHTML="";
+  ywDB
+    .sort((a,b)=>a.temp-b.temp)
+    .forEach((r,i)=>{
+      ywTable.innerHTML += `
+      <tr>
+        <td>${r.material}</td>
+        <td>${r.grade}</td>
+        <td>${r.temp}</td>
+        <td>${r.Y}</td>
+        <td>${r.W}</td>
+        <td><button class="danger" onclick="ywDB.splice(${i},1);saveAll()">Del</button></td>
+      </tr>`;
+    });
+}
+
+/* ================= MATERIAL ================= */
+function addMaterial(){
+  const tArr = temps.value.split(",").map(Number);
+  const sArr = stress.value.split(",").map(Number);
+
+  if(tArr.length !== sArr.length){
+    alert("Temperature & Stress count mismatch");
+    return;
+  }
+
+  tArr.forEach((T,i)=>{
+    materialDB.push({
+      family:family.value,
+      mat:mat.value,
+      grade:grade.value,
+      pipeType:pipeTypeSelect.value,
+      temp:T,
+      stress:sArr[i],
+      E:+e.value
+    });
+  });
+  saveAll();
 }
 
 function loadMaterial(){
- materialTable.innerHTML="";
- materialDB.forEach((r,i)=>{
-  materialTable.innerHTML+=`
-  <tr>
-   <td>${r.family}</td><td>${r.mat}</td><td>${r.grade}</td>
-   <td>${r.pipe}</td><td>${r.temp}</td><td>${r.stress}</td>
-   <td>${r.E}</td><td>${r.W}</td><td>${r.Y}</td>
-   <td><button class="danger" onclick="materialDB.splice(${i},1);saveAll()">Del</button></td>
-  </tr>`;
- });
+  materialTable.innerHTML="";
+  materialDB.forEach((r,i)=>{
+    materialTable.innerHTML += `
+      <tr>
+        <td>${r.family}</td>
+        <td>${r.mat}</td>
+        <td>${r.grade}</td>
+        <td>${r.pipeType}</td>
+        <td>${r.temp}</td>
+        <td>${r.stress}</td>
+        <td>${r.E}</td>
+        <td><button class="danger" onclick="materialDB.splice(${i},1);saveAll()">Del</button></td>
+      </tr>`;
+  });
 }
 
-/* SAVE / LOAD */
+/* ================= SAVE / LOAD ================= */
 function saveAll(){
- localStorage.setItem("pipeTypeDB",JSON.stringify(pipeTypeDB));
- localStorage.setItem("materialDB",JSON.stringify(materialDB));
- loadAll();
+  localStorage.setItem("pipeTypeDB",JSON.stringify(pipeTypeDB));
+  localStorage.setItem("pipeDB",JSON.stringify(pipeDB));
+  localStorage.setItem("ywDB",JSON.stringify(ywDB));
+  localStorage.setItem("materialDB",JSON.stringify(materialDB));
+  loadAll();
 }
+
 function loadAll(){
- loadPipeTypes();
- loadMaterial();
+  loadPipeTypes();
+  loadPipes();
+  loadYW();
+  loadMaterial();
 }
 </script>
+
 </body>
 </html>
